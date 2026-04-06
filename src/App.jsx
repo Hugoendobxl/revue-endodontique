@@ -27,15 +27,24 @@ export default function App() {
 
     async function init() {
       try {
-        await loadArticles();
-        await loadStars();
+        console.log('[ENDO] Starting init...');
+        const arts = await loadArticles();
+        console.log('[ENDO] Articles loaded:', arts.length);
+        const st = await loadStars();
+        console.log('[ENDO] Stars loaded:', st.length);
       } catch (e) {
-        console.error('Init error:', e);
+        console.error('[ENDO] Init error:', e);
       }
       setLoading(false);
 
-      unsubArticles = subscribeArticles(setArticles);
-      unsubStars = subscribeStars(setStars);
+      unsubArticles = subscribeArticles((a) => {
+        console.log('[ENDO] Subscribe articles:', a.length);
+        setArticles(a);
+      });
+      unsubStars = subscribeStars((s) => {
+        console.log('[ENDO] Subscribe stars:', s.length);
+        setStars(s);
+      });
     }
     init();
 
