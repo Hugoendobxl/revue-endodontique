@@ -42,7 +42,7 @@ export async function addArticles(newArticles, existingArticles) {
   }
   await batch.commit();
 
-  return { added: unique.length, total: existingArticles.length + unique.length };
+  return { added: unique.length, total: existingArticles.length + unique.length, addedArticles: unique };
 }
 
 export async function updateArticle(id, fields) {

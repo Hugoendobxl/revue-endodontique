@@ -53,7 +53,7 @@ export default function ImportZone({ articles, onClose }) {
     if (totalAdded > 0) {
       setProgress(`Enrichissement IA : 0/${totalAdded}...`);
 
-      const newArticles = allParsed.slice(allParsed.length - totalAdded);
+      const newArticles = result.addedArticles;
       for (let i = 0; i < newArticles.length; i++) {
         setProgress(`Enrichissement IA : ${i + 1}/${totalAdded}...`);
         const enriched = await enrichArticle(newArticles[i]);
