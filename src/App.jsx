@@ -22,19 +22,26 @@ export default function App() {
   const [showImport, setShowImport] = useState(false);
 
   useEffect(() => {
+    let unsubArticles;
+    let unsubStars;
+
     async function init() {
-      await loadArticles();
-      await loadStars();
+      try {
+        await loadArticles();
+        await loadStars();
+      } catch (e) {
+        console.error('Init error:', e);
+      }
       setLoading(false);
+
+      unsubArticles = subscribeArticles(setArticles);
+      unsubStars = subscribeStars(setStars);
     }
     init();
 
-    const unsubArticles = subscribeArticles(setArticles);
-    const unsubStars = subscribeStars(setStars);
-
     return () => {
-      unsubArticles();
-      unsubStars();
+      if (unsubArticles) unsubArticles();
+      if (unsubStars) unsubStars();
     };
   }, []);
 
