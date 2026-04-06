@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import Header from './components/Header';
 import MonthNav from './components/MonthNav';
 import SearchFilters from './components/SearchFilters';
@@ -6,11 +6,12 @@ import ThemeChips from './components/ThemeChips';
 import ArticleCard from './components/ArticleCard';
 import ImportZone from './components/ImportZone';
 import NewsletterPanel from './components/NewsletterPanel';
-import { getArticles, getStars, toggleStar } from './utils/storage';
+import { loadArticles, loadStars, toggleStar, subscribeArticles, subscribeStars } from './utils/storage';
 
 export default function App() {
-  const [articles, setArticles] = useState(getArticles);
-  const [stars, setStars] = useState(getStars);
+  const [articles, setArticles] = useState([]);
+  const [stars, setStars] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [journalFilter, setJournalFilter] = useState('');
   const [themeFilter, setThemeFilter] = useState('');
@@ -20,14 +21,27 @@ export default function App() {
   const [showStarsOnly, setShowStarsOnly] = useState(false);
   const [showImport, setShowImport] = useState(false);
 
-  const handleToggleStar = useCallback((id) => {
-    const newStars = toggleStar(id);
-    setStars([...newStars]);
+  useEffect(() => {
+    async function init() {
+      await loadArticles();
+      await loadStars();
+      setLoading(false);
+    }
+    init();
+
+    const unsubArticles = subscribeArticles(setArticles);
+    const unsubStars = subscribeStars(setStars);
+
+    return () => {
+      unsubArticles();
+      unsubStars();
+    };
   }, []);
 
-  const handleImport = useCallback(() => {
-    setArticles(getArticles());
-  }, []);
+  const handleToggleStar = useCallback(async (id) => {
+    const newStars = await toggleStar(id, stars);
+    setStars(newStars);
+  }, [stars]);
 
   const filteredArticles = useMemo(() => {
     let result = articles;
@@ -54,7 +68,7 @@ export default function App() {
         a.title.toLowerCase().includes(q) ||
         a.authors.toLowerCase().includes(q) ||
         a.summary.toLowerCase().includes(q) ||
-        a.takeaway.toLowerCase().includes(q) ||
+        (a.takeaway || '').toLowerCase().includes(q) ||
         a.type.toLowerCase().includes(q) ||
         a.theme.toLowerCase().includes(q)
       );
@@ -64,6 +78,15 @@ export default function App() {
   }, [articles, activeYear, activeMonth, journalFilter, themeFilter, activeTheme, showStarsOnly, stars, search]);
 
   const showMonth = !activeYear;
+
+  if (loading) {
+    return (
+      <div className="app">
+        <Header totalCount={0} />
+        <p className="loading-text">Chargement...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="app">
@@ -117,7 +140,6 @@ export default function App() {
               isStarred={stars.includes(article.id)}
               onToggleStar={handleToggleStar}
               showMonth={showMonth}
-              style={{ animationDelay: `${i * 40}ms` }}
             />
           ))}
           {filteredArticles.length === 0 && (
@@ -129,7 +151,10 @@ export default function App() {
       </main>
 
       {showImport && (
-        <ImportZone onImport={handleImport} onClose={() => setShowImport(false)} />
+        <ImportZone
+          articles={articles}
+          onClose={() => setShowImport(false)}
+        />
       )}
     </div>
   );

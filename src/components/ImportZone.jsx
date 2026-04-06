@@ -2,9 +2,10 @@ import { useState, useRef, useCallback } from 'react';
 import { parsePubMed } from '../utils/pubmedParser';
 import { addArticles } from '../utils/storage';
 
-export default function ImportZone({ onImport, onClose }) {
+export default function ImportZone({ articles, onClose }) {
   const [dragOver, setDragOver] = useState(false);
   const [message, setMessage] = useState(null);
+  const [importing, setImporting] = useState(false);
   const fileRef = useRef();
 
   const handleFiles = useCallback(async (files) => {
@@ -14,29 +15,29 @@ export default function ImportZone({ onImport, onClose }) {
       return;
     }
 
+    setImporting(true);
     let totalAdded = 0;
     let totalParsed = 0;
 
     for (const file of textFiles) {
       const text = await file.text();
-      const articles = parsePubMed(text);
-      totalParsed += articles.length;
-      const result = addArticles(articles);
+      const parsed = parsePubMed(text);
+      totalParsed += parsed.length;
+      const result = await addArticles(parsed, articles);
       totalAdded += result.added;
     }
 
+    setImporting(false);
     setMessage({
       type: 'success',
       text: `${totalParsed} article${totalParsed > 1 ? 's' : ''} détecté${totalParsed > 1 ? 's' : ''}, ${totalAdded} ajouté${totalAdded > 1 ? 's' : ''} (${totalParsed - totalAdded} doublon${totalParsed - totalAdded > 1 ? 's' : ''} ignoré${totalParsed - totalAdded > 1 ? 's' : ''})`,
     });
 
-    if (totalAdded > 0) onImport();
-
     setTimeout(() => {
       setMessage(null);
       onClose();
     }, 4000);
-  }, [onImport, onClose]);
+  }, [articles, onClose]);
 
   const onDrop = useCallback((e) => {
     e.preventDefault();
@@ -56,7 +57,9 @@ export default function ImportZone({ onImport, onClose }) {
           onClick={() => fileRef.current?.click()}
         >
           <span className="drop-icon">📂</span>
-          <p className="drop-text">Glissez vos fichiers PubMed .txt ici</p>
+          <p className="drop-text">
+            {importing ? 'Import en cours...' : 'Glissez vos fichiers PubMed .txt ici'}
+          </p>
           <p className="drop-hint">ou cliquez pour sélectionner</p>
         </div>
         <input

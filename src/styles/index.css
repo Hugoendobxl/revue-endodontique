@@ -582,6 +582,13 @@ body {
   border: 1px solid #FECACA;
 }
 
+.loading-text {
+  text-align: center;
+  color: #94A3B8;
+  padding: 64px 0;
+  font-size: 16px;
+}
+
 .no-results {
   text-align: center;
   color: #94A3B8;

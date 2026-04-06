@@ -1,25 +1,34 @@
+import { db } from './firebase';
+import {
+  collection, doc, getDocs, getDoc, setDoc, deleteDoc, onSnapshot, writeBatch
+} from 'firebase/firestore';
 import { initialArticles } from '../data/initialArticles';
 
-const ARTICLES_KEY = 'endo-articles';
-const STARS_KEY = 'endo-stars';
+const ARTICLES_COL = 'articles';
+const STARS_DOC = doc(db, 'config', 'stars');
 
-export function getArticles() {
-  const stored = localStorage.getItem(ARTICLES_KEY);
-  if (!stored) {
-    localStorage.setItem(ARTICLES_KEY, JSON.stringify(initialArticles));
-    return initialArticles;
+// ===== ARTICLES =====
+
+export async function loadArticles() {
+  const snap = await getDocs(collection(db, ARTICLES_COL));
+  if (snap.empty) {
+    await seedArticles();
+    return [...initialArticles];
   }
-  return JSON.parse(stored);
+  return snap.docs.map(d => d.data());
 }
 
-export function saveArticles(articles) {
-  localStorage.setItem(ARTICLES_KEY, JSON.stringify(articles));
+async function seedArticles() {
+  const batch = writeBatch(db);
+  for (const article of initialArticles) {
+    batch.set(doc(db, ARTICLES_COL, article.id), article);
+  }
+  await batch.commit();
 }
 
-export function addArticles(newArticles) {
-  const existing = getArticles();
-  const existingDois = new Set(existing.map(a => a.doi).filter(Boolean));
-  const existingTitles = new Set(existing.map(a => a.title.substring(0, 60)));
+export async function addArticles(newArticles, existingArticles) {
+  const existingDois = new Set(existingArticles.map(a => a.doi).filter(Boolean));
+  const existingTitles = new Set(existingArticles.map(a => a.title.substring(0, 60)));
 
   const unique = newArticles.filter(a => {
     if (a.doi && existingDois.has(a.doi)) return false;
@@ -27,24 +36,43 @@ export function addArticles(newArticles) {
     return true;
   });
 
-  const merged = [...existing, ...unique];
-  saveArticles(merged);
-  return { added: unique.length, total: merged.length };
-}
-
-export function getStars() {
-  const stored = localStorage.getItem(STARS_KEY);
-  return stored ? JSON.parse(stored) : [];
-}
-
-export function toggleStar(id) {
-  const stars = getStars();
-  const idx = stars.indexOf(id);
-  if (idx === -1) {
-    stars.push(id);
-  } else {
-    stars.splice(idx, 1);
+  const batch = writeBatch(db);
+  for (const article of unique) {
+    batch.set(doc(db, ARTICLES_COL, article.id), article);
   }
-  localStorage.setItem(STARS_KEY, JSON.stringify(stars));
-  return stars;
+  await batch.commit();
+
+  return { added: unique.length, total: existingArticles.length + unique.length };
+}
+
+export function subscribeArticles(callback) {
+  return onSnapshot(collection(db, ARTICLES_COL), (snap) => {
+    const articles = snap.docs.map(d => d.data());
+    callback(articles);
+  });
+}
+
+// ===== STARS =====
+
+export async function loadStars() {
+  const snap = await getDoc(STARS_DOC);
+  return snap.exists() ? snap.data().ids || [] : [];
+}
+
+export async function toggleStar(id, currentStars) {
+  const idx = currentStars.indexOf(id);
+  const newStars = [...currentStars];
+  if (idx === -1) {
+    newStars.push(id);
+  } else {
+    newStars.splice(idx, 1);
+  }
+  await setDoc(STARS_DOC, { ids: newStars });
+  return newStars;
+}
+
+export function subscribeStars(callback) {
+  return onSnapshot(STARS_DOC, (snap) => {
+    callback(snap.exists() ? snap.data().ids || [] : []);
+  });
 }
