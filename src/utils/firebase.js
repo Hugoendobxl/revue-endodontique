@@ -2,12 +2,12 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAo4SNkKqk814E6yeL4KmV8KB0tSADCpwI",
-  authDomain: "revue-endodontique.firebaseapp.com",
-  projectId: "revue-endodontique",
-  storageBucket: "revue-endodontique.firebasestorage.app",
-  messagingSenderId: "207865903610",
-  appId: "1:207865903610:web:0d5cf53113c13010eecc43"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 const app = initializeApp(firebaseConfig);
