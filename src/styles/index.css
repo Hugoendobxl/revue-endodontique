@@ -544,6 +544,12 @@ body {
   background: rgba(99,102,241,0.03);
 }
 
+.drop-area.importing {
+  border-color: #6366F1;
+  background: rgba(99,102,241,0.03);
+  cursor: default;
+}
+
 .drop-icon {
   font-size: 40px;
   display: block;

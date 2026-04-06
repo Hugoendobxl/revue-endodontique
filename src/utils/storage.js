@@ -1,6 +1,6 @@
 import { db } from './firebase';
 import {
-  collection, doc, getDocs, getDoc, setDoc, deleteDoc, onSnapshot, writeBatch
+  collection, doc, getDocs, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, writeBatch
 } from 'firebase/firestore';
 import { initialArticles } from '../data/initialArticles';
 
@@ -43,6 +43,10 @@ export async function addArticles(newArticles, existingArticles) {
   await batch.commit();
 
   return { added: unique.length, total: existingArticles.length + unique.length };
+}
+
+export async function updateArticle(id, fields) {
+  await updateDoc(doc(db, ARTICLES_COL, id), fields);
 }
 
 export function subscribeArticles(callback) {
