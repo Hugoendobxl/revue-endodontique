@@ -10,12 +10,25 @@ const STARS_DOC = doc(db, 'config', 'stars');
 // ===== ARTICLES =====
 
 export async function loadArticles() {
-  const snap = await getDocs(collection(db, ARTICLES_COL));
-  if (snap.empty) {
-    await seedArticles();
-    return [...initialArticles];
+  console.log('[ENDO] loadArticles: calling getDocs...');
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('Firestore timeout after 10s')), 10000)
+  );
+  try {
+    const snap = await Promise.race([
+      getDocs(collection(db, ARTICLES_COL)),
+      timeoutPromise
+    ]);
+    console.log('[ENDO] loadArticles: got', snap.size, 'docs');
+    if (snap.empty) {
+      await seedArticles();
+      return [...initialArticles];
+    }
+    return snap.docs.map(d => d.data());
+  } catch (e) {
+    console.error('[ENDO] loadArticles error:', e.message, e);
+    throw e;
   }
-  return snap.docs.map(d => d.data());
 }
 
 async function seedArticles() {
