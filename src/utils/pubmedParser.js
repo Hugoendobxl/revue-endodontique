@@ -19,7 +19,10 @@ export function parsePubMed(text) {
   for (const entry of entries) {
     try {
       const article = parseEntry(entry);
-      if (article) articles.push(article);
+      // Skip articles without title or summary
+      if (article && article.title && article.summary && article.summary.length > 20) {
+        articles.push(article);
+      }
     } catch {
       // skip unparseable entries
     }
@@ -112,10 +115,18 @@ function parseEntry(entry) {
     // Fallback: take all blocks after authors, excluding metadata
     summary = blocks.slice(2).filter(b =>
       !b.startsWith('Author information') &&
+      !b.startsWith('Collaborators:') &&
+      !b.startsWith('Comment in') &&
+      !b.startsWith('Comment on') &&
       !b.startsWith('Copyright') &&
+      !b.startsWith('Erratum') &&
       !b.match(/^DOI:/) &&
       !b.match(/^PMID:/) &&
-      !b.match(/^Conflict/)
+      !b.match(/^PMCID:/) &&
+      !b.match(/^Conflict/) &&
+      !b.match(/^Grant support/) &&
+      !b.match(/^\(?\d+\)\s/) &&
+      b.length > 30
     ).join(' ');
   }
 

@@ -1,1 +1,8 @@
-{"rewrites": [{"source": "/(.*)", "destination": "/"}]}
+{
+  "rewrites": [{"source": "/(.*)", "destination": "/"}],
+  "functions": {
+    "api/enrich.js": { "maxDuration": 30 },
+    "api/articles.js": { "maxDuration": 15 },
+    "api/stars.js": { "maxDuration": 15 }
+  }
+}
