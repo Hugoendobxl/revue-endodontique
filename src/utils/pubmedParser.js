@@ -13,7 +13,9 @@ const monthMap = {
 };
 
 export function parsePubMed(text) {
-  const entries = text.split(/\n(?=\d+\.\s)/).filter(e => e.trim());
+  // Split on lines starting with "N. Journal" pattern (e.g. "1. Int Endod J")
+  // This avoids false splits on wrapped lines like "Epub 2025 Aug\n11."
+  const entries = text.split(/\n(?=\d+\.\s+(?:Int Endod J|J Endod|Aust Endod J|Eur Endod J))/).filter(e => e.trim());
   const articles = [];
 
   for (const entry of entries) {
