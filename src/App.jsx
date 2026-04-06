@@ -6,7 +6,7 @@ import ThemeChips from './components/ThemeChips';
 import ArticleCard from './components/ArticleCard';
 import ImportZone from './components/ImportZone';
 import NewsletterPanel from './components/NewsletterPanel';
-import { loadArticles, loadStars, toggleStar, subscribeArticles, subscribeStars } from './utils/storage';
+import { loadArticles, loadStars, toggleStar } from './utils/storage';
 
 export default function App() {
   const [articles, setArticles] = useState([]);
@@ -21,43 +21,28 @@ export default function App() {
   const [showStarsOnly, setShowStarsOnly] = useState(false);
   const [showImport, setShowImport] = useState(false);
 
-  useEffect(() => {
-    let unsubArticles;
-    let unsubStars;
-
-    async function init() {
-      try {
-        console.log('[ENDO] Starting init...');
-        const arts = await loadArticles();
-        console.log('[ENDO] Articles loaded:', arts.length);
-        const st = await loadStars();
-        console.log('[ENDO] Stars loaded:', st.length);
-      } catch (e) {
-        console.error('[ENDO] Init error:', e);
-      }
-      setLoading(false);
-
-      unsubArticles = subscribeArticles((a) => {
-        console.log('[ENDO] Subscribe articles:', a.length);
-        setArticles(a);
-      });
-      unsubStars = subscribeStars((s) => {
-        console.log('[ENDO] Subscribe stars:', s.length);
-        setStars(s);
-      });
+  const refreshData = useCallback(async () => {
+    try {
+      const [arts, st] = await Promise.all([loadArticles(), loadStars()]);
+      setArticles(arts);
+      setStars(st);
+    } catch (e) {
+      console.error('Load error:', e);
     }
-    init();
-
-    return () => {
-      if (unsubArticles) unsubArticles();
-      if (unsubStars) unsubStars();
-    };
   }, []);
+
+  useEffect(() => {
+    refreshData().then(() => setLoading(false));
+  }, [refreshData]);
 
   const handleToggleStar = useCallback(async (id) => {
     const newStars = await toggleStar(id, stars);
     setStars(newStars);
   }, [stars]);
+
+  const handleImportDone = useCallback(() => {
+    refreshData();
+  }, [refreshData]);
 
   const filteredArticles = useMemo(() => {
     let result = articles;
@@ -149,7 +134,7 @@ export default function App() {
         </p>
 
         <div className="articles-list">
-          {filteredArticles.map((article, i) => (
+          {filteredArticles.map((article) => (
             <ArticleCard
               key={article.id}
               article={article}
@@ -169,6 +154,7 @@ export default function App() {
       {showImport && (
         <ImportZone
           articles={articles}
+          onImportDone={handleImportDone}
           onClose={() => setShowImport(false)}
         />
       )}

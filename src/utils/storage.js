@@ -1,42 +1,23 @@
-import { db } from './firebase';
-import {
-  collection, doc, getDocs, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, writeBatch
-} from 'firebase/firestore';
 import { initialArticles } from '../data/initialArticles';
-
-const ARTICLES_COL = 'articles';
-const STARS_DOC = doc(db, 'config', 'stars');
 
 // ===== ARTICLES =====
 
 export async function loadArticles() {
-  console.log('[ENDO] loadArticles: calling getDocs...');
-  const timeoutPromise = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error('Firestore timeout after 10s')), 10000)
-  );
-  try {
-    const snap = await Promise.race([
-      getDocs(collection(db, ARTICLES_COL)),
-      timeoutPromise
-    ]);
-    console.log('[ENDO] loadArticles: got', snap.size, 'docs');
-    if (snap.empty) {
-      await seedArticles();
-      return [...initialArticles];
-    }
-    return snap.docs.map(d => d.data());
-  } catch (e) {
-    console.error('[ENDO] loadArticles error:', e.message, e);
-    throw e;
+  const res = await fetch('/api/articles');
+  const articles = await res.json();
+  if (articles.length === 0) {
+    await seedArticles();
+    return [...initialArticles];
   }
+  return articles;
 }
 
 async function seedArticles() {
-  const batch = writeBatch(db);
-  for (const article of initialArticles) {
-    batch.set(doc(db, ARTICLES_COL, article.id), article);
-  }
-  await batch.commit();
+  await fetch('/api/articles', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ articles: initialArticles }),
+  });
 }
 
 export async function addArticles(newArticles, existingArticles) {
@@ -49,31 +30,30 @@ export async function addArticles(newArticles, existingArticles) {
     return true;
   });
 
-  const batch = writeBatch(db);
-  for (const article of unique) {
-    batch.set(doc(db, ARTICLES_COL, article.id), article);
+  if (unique.length > 0) {
+    await fetch('/api/articles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ articles: unique }),
+    });
   }
-  await batch.commit();
 
   return { added: unique.length, total: existingArticles.length + unique.length, addedArticles: unique };
 }
 
 export async function updateArticle(id, fields) {
-  await updateDoc(doc(db, ARTICLES_COL, id), fields);
-}
-
-export function subscribeArticles(callback) {
-  return onSnapshot(collection(db, ARTICLES_COL), (snap) => {
-    const articles = snap.docs.map(d => d.data());
-    callback(articles);
+  await fetch('/api/articles', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, fields }),
   });
 }
 
 // ===== STARS =====
 
 export async function loadStars() {
-  const snap = await getDoc(STARS_DOC);
-  return snap.exists() ? snap.data().ids || [] : [];
+  const res = await fetch('/api/stars');
+  return await res.json();
 }
 
 export async function toggleStar(id, currentStars) {
@@ -84,12 +64,10 @@ export async function toggleStar(id, currentStars) {
   } else {
     newStars.splice(idx, 1);
   }
-  await setDoc(STARS_DOC, { ids: newStars });
-  return newStars;
-}
-
-export function subscribeStars(callback) {
-  return onSnapshot(STARS_DOC, (snap) => {
-    callback(snap.exists() ? snap.data().ids || [] : []);
+  await fetch('/api/stars', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids: newStars }),
   });
+  return newStars;
 }

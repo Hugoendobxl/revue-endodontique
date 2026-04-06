@@ -21,7 +21,7 @@ async function enrichArticle(article) {
   }
 }
 
-export default function ImportZone({ articles, onClose }) {
+export default function ImportZone({ articles, onImportDone, onClose }) {
   const [dragOver, setDragOver] = useState(false);
   const [message, setMessage] = useState(null);
   const [importing, setImporting] = useState(false);
@@ -70,6 +70,7 @@ export default function ImportZone({ articles, onClose }) {
 
     setImporting(false);
     setProgress('');
+    if (onImportDone) onImportDone();
     setMessage({
       type: 'success',
       text: `${totalAdded} article${totalAdded > 1 ? 's' : ''} ajouté${totalAdded > 1 ? 's' : ''} et enrichi${totalAdded > 1 ? 's' : ''} (${totalParsed - totalAdded} doublon${totalParsed - totalAdded > 1 ? 's' : ''})`,
@@ -79,7 +80,7 @@ export default function ImportZone({ articles, onClose }) {
       setMessage(null);
       onClose();
     }, 4000);
-  }, [articles, onClose]);
+  }, [articles, onImportDone, onClose]);
 
   const onDrop = useCallback((e) => {
     e.preventDefault();

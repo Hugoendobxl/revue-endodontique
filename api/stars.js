@@ -1,0 +1,36 @@
+import { initializeApp, getApps } from 'firebase/app';
+import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
+
+const firebaseConfig = {
+  apiKey: process.env.VITE_FIREBASE_API_KEY,
+  projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+};
+
+function getDb() {
+  const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+  return getFirestore(app);
+}
+
+const STARS_DOC = 'config/stars';
+
+export default async function handler(req, res) {
+  const db = getDb();
+  const ref = doc(db, 'config', 'stars');
+
+  if (req.method === 'GET') {
+    const snap = await getDoc(ref);
+    const ids = snap.exists() ? snap.data().ids || [] : [];
+    return res.status(200).json(ids);
+  }
+
+  if (req.method === 'POST') {
+    const { ids } = req.body;
+    if (!Array.isArray(ids)) {
+      return res.status(400).json({ error: 'Missing ids array' });
+    }
+    await setDoc(ref, { ids });
+    return res.status(200).json({ ok: true });
+  }
+
+  res.status(405).json({ error: 'Method not allowed' });
+}
