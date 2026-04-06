@@ -1,9 +1,19 @@
 import { initialArticles } from '../data/initialArticles';
 
+function authHeaders(extra = {}) {
+  const token = localStorage.getItem('endo-token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...extra,
+  };
+}
+
 // ===== ARTICLES =====
 
 export async function loadArticles() {
-  const res = await fetch('/api/articles');
+  const res = await fetch('/api/articles', { headers: authHeaders() });
+  if (!res.ok) throw new Error('Unauthorized');
   const articles = await res.json();
   if (articles.length === 0) {
     await seedArticles();
@@ -15,7 +25,7 @@ export async function loadArticles() {
 async function seedArticles() {
   await fetch('/api/articles', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify({ articles: initialArticles }),
   });
 }
@@ -33,7 +43,7 @@ export async function addArticles(newArticles, existingArticles) {
   if (unique.length > 0) {
     await fetch('/api/articles', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({ articles: unique }),
     });
   }
@@ -44,7 +54,7 @@ export async function addArticles(newArticles, existingArticles) {
 export async function updateArticle(id, fields) {
   await fetch('/api/articles', {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify({ id, fields }),
   });
 }
@@ -52,7 +62,8 @@ export async function updateArticle(id, fields) {
 // ===== STARS =====
 
 export async function loadStars() {
-  const res = await fetch('/api/stars');
+  const res = await fetch('/api/stars', { headers: authHeaders() });
+  if (!res.ok) throw new Error('Unauthorized');
   return await res.json();
 }
 
@@ -66,7 +77,7 @@ export async function toggleStar(id, currentStars) {
   }
   await fetch('/api/stars', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify({ ids: newStars }),
   });
   return newStars;

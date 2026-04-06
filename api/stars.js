@@ -13,7 +13,10 @@ function getDb() {
 
 const STARS_DOC = 'config/stars';
 
+import { verifyAuth } from './_auth.js';
+
 export default async function handler(req, res) {
+  if (!verifyAuth(req)) return res.status(401).json({ error: 'Unauthorized' });
   const db = getDb();
   const ref = doc(db, 'config', 'stars');
 

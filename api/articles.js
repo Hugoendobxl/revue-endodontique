@@ -11,7 +11,10 @@ function getDb() {
   return getFirestore(app);
 }
 
+import { verifyAuth } from './_auth.js';
+
 export default async function handler(req, res) {
+  if (!verifyAuth(req)) return res.status(401).json({ error: 'Unauthorized' });
   const db = getDb();
 
   if (req.method === 'GET') {

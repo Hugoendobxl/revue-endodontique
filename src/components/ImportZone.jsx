@@ -4,9 +4,13 @@ import { addArticles, updateArticle } from '../utils/storage';
 
 async function enrichArticle(article) {
   try {
+    const token = localStorage.getItem('endo-token');
     const res = await fetch('/api/enrich', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify({
         title: article.title,
         authors: article.authors,

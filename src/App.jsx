@@ -6,9 +6,11 @@ import ThemeChips from './components/ThemeChips';
 import ArticleCard from './components/ArticleCard';
 import ImportZone from './components/ImportZone';
 import NewsletterPanel from './components/NewsletterPanel';
+import LoginPage from './components/LoginPage';
 import { loadArticles, loadStars, toggleStar } from './utils/storage';
 
 export default function App() {
+  const [token, setToken] = useState(() => localStorage.getItem('endo-token'));
   const [articles, setArticles] = useState([]);
   const [stars, setStars] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,12 +30,32 @@ export default function App() {
       setStars(st);
     } catch (e) {
       console.error('Load error:', e);
+      if (e.message === 'Unauthorized') {
+        localStorage.removeItem('endo-token');
+        localStorage.removeItem('endo-user');
+        setToken(null);
+      }
     }
   }, []);
 
   useEffect(() => {
-    refreshData().then(() => setLoading(false));
-  }, [refreshData]);
+    if (token) {
+      refreshData().then(() => setLoading(false));
+    }
+  }, [token, refreshData]);
+
+  const handleLogin = useCallback((newToken) => {
+    setToken(newToken);
+    setLoading(true);
+  }, []);
+
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem('endo-token');
+    localStorage.removeItem('endo-user');
+    setToken(null);
+    setArticles([]);
+    setStars([]);
+  }, []);
 
   const handleToggleStar = useCallback(async (id) => {
     const newStars = await toggleStar(id, stars);
@@ -78,6 +100,10 @@ export default function App() {
     return result.sort((a, b) => b.month.localeCompare(a.month));
   }, [articles, activeYear, activeMonth, journalFilter, themeFilter, activeTheme, showStarsOnly, stars, search]);
 
+  if (!token) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
+
   const showMonth = !activeYear;
 
   if (loading) {
@@ -102,9 +128,14 @@ export default function App() {
             onSelectYear={(y) => { setActiveYear(y); setActiveMonth(null); }}
             onSelectMonth={setActiveMonth}
           />
-          <button className="import-btn" onClick={() => setShowImport(true)}>
-            + Importer
-          </button>
+          <div className="nav-actions">
+            <button className="import-btn" onClick={() => setShowImport(true)}>
+              + Importer
+            </button>
+            <button className="logout-btn" onClick={handleLogout} title="Déconnexion">
+              Sortir
+            </button>
+          </div>
         </div>
       </div>
 
