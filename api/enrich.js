@@ -38,6 +38,21 @@ Réponds UNIQUEMENT avec le JSON, sans markdown, sans backticks, sans explicatio
       }]
     });
 
+    // Log usage to launcher
+    if (message.usage) {
+      fetch('https://launcher-v2-api-production.up.railway.app/api/claude-usage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          module: 'Revue Endodontique',
+          model: 'claude-sonnet-4-20250514',
+          input_tokens: message.usage.input_tokens,
+          output_tokens: message.usage.output_tokens,
+          endpoint: 'enrich',
+        }),
+      }).catch(() => {});
+    }
+
     const text = message.content[0].text.trim();
     const result = JSON.parse(text);
 
